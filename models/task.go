@@ -8,32 +8,67 @@ import (
 )
 
 type Task struct {
-	ID          uint           `json:"id"`
-	UsersID     uint           `json:"users_id"`
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	StatusID    uint           `json:"status_id"`
-	DueDate     time.Time      `json:"due_date"`
-	Attachment  sql.NullString `json:"attachment"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	TagID       uint           `json:"tag_id"`
-	DeletedAt   sql.NullTime   `json:"deleted_at"`
+	ID          int64        `json:"id"`
+	UsersID     int64        `json:"users_id"`
+	Title       string       `json:"title"`
+	Description string       `json:"description"`
+	StatusID    int64        `json:"status_id"`
+	DueDate     time.Time    `json:"due_date"`
+	Attachment  *string      `json:"attachment"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at"`
+	TagID       int64        `json:"tag_id"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
 }
 
-func GetAllTasks() ([]Task, error) {
-	query := `SELECT * FROM tasks`
+func (t *Task) Save() error {
+	query := `INSERT INTO tasks(users_id, title, description, status_id, due_date, attachment, tag_id)
+	VALUES (?, ?, ?, ?, ?, ?, ?)`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(t.UsersID, t.Title, t.Description, t.StatusID, t.DueDate, t.Attachment, t.TagID)
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	t.ID = id
+	return err
+}
+
+func GetAllTasks() ([]GetTaskResponse, error) {
+	query := `
+	SELECT
+		tasks.id,
+		tasks.users_id,
+		tasks.title,
+		tasks.description,
+		statuses.name AS status_name,
+		tasks.due_date,
+		tasks.attachment,
+		tasks.created_at,
+		tasks.updated_at,
+		tags.name_tag AS tag_name,
+		tasks.deleted_at
+	FROM tasks
+	JOIN statuses ON tasks.status_id = statuses.id
+	JOIN tags ON tasks.tag_id = tags.id
+	WHERE deleted_at IS NULL`
 	rows, err := database.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var tasks []Task
+	var tasks []GetTaskResponse
 	for rows.Next() {
-		var task Task
-		err = rows.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusID, &task.DueDate,
-			&task.Attachment, &task.CreatedAt, &task.UpdatedAt, &task.TagID, &task.DeletedAt)
+		var task GetTaskResponse
+		err = rows.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusName, &task.DueDate,
+			&task.Attachment, &task.CreatedAt, &task.UpdatedAt, &task.TagName, &task.DeletedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -42,4 +77,67 @@ func GetAllTasks() ([]Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func GetTaskByID(id int64) (*GetTaskResponse, error) {
+	query := `
+	SELECT
+		tasks.id,
+		tasks.users_id,
+		tasks.title,
+		tasks.description,
+		statuses.name AS status_name,
+		tasks.due_date,
+		tasks.attachment,
+		tasks.created_at,
+		tasks.updated_at,
+		tags.name_tag AS tag_name,
+		tasks.deleted_at
+	FROM tasks
+	JOIN statuses ON tasks.status_id = statuses.id
+	JOIN tags ON tasks.tag_id = tags.id
+	WHERE tasks.id = ? && deleted_at IS NULL`
+	row := database.DB.QueryRow(query, id)
+
+	var task GetTaskResponse
+	err := row.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusName, &task.DueDate,
+		&task.Attachment, &task.CreatedAt, &task.UpdatedAt, &task.TagName, &task.DeletedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+func (t Task) Update() error {
+	query := `UPDATE tasks 
+	SET
+		title = ?,
+		description = ?,
+		status_id = ?,
+		due_date = ?,
+		attachment = ?,
+		tag_id = ?
+	WHERE id = ? && deleted_at IS NULL`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(t.Title, t.Description, t.StatusID, t.DueDate, t.Attachment, t.TagID, t.ID)
+
+	return err
+}
+
+func (t Task) Delete() error {
+	query := `UPDATE tasks SET deleted_at = ? WHERE id = ?`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(time.Now(), t.ID)
+	return err
 }
