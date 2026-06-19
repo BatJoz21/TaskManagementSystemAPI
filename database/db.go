@@ -80,4 +80,36 @@ func createTables() {
 	if err != nil {
 		panic("Failed to create tasks table: " + err.Error())
 	}
+
+	createUsersTable := `CREATE TABLE IF NOT EXISTS theusers (
+		id INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+		first_name VARCHAR(150) NOT NULL,
+		last_name VARCHAR(150) NOT NULL,
+		email VARCHAR(225) NOT NULL,
+		password VARCHAR(225) NOT NULL,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		deleted_at DATETIME
+	)`
+	_, err = DB.Exec(createUsersTable)
+	if err != nil {
+		panic("Failed to create users table: " + err.Error())
+	}
+
+	createUserGroupsTable := `CREATE TABLE IF NOT EXISTS user_roles (
+		id INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+		user_id INTEGER UNSIGNED NOT NULL,
+		role VARCHAR(225) NOT NULL,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+		CONSTRAINT user_roles_user_id_fk
+			FOREIGN KEY(user_id)
+			REFERENCES theusers (id)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
+	)`
+	_, err = DB.Exec(createUserGroupsTable)
+	if err != nil {
+		panic("Failed to create user_groups table: " + err.Error())
+	}
 }
