@@ -15,10 +15,9 @@ func createTask(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
 		return
 	}
-	taskDTO.UsersID = 3
 
 	task := models.Task{
-		UsersID:     taskDTO.UsersID,
+		UsersID:     3,
 		Title:       taskDTO.Title,
 		Description: taskDTO.Description,
 		StatusID:    taskDTO.StatusID,

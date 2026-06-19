@@ -5,7 +5,6 @@ import (
 )
 
 type CreateTaskRequest struct {
-	UsersID     int64     `json:"users_id"`
 	Title       string    `json:"title" binding:"required"`
 	Description string    `json:"description" binding:"required"`
 	StatusID    int64     `json:"status_id" binding:"required"`

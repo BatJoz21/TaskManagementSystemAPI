@@ -57,7 +57,8 @@ func GetAllTasks() ([]GetTaskResponse, error) {
 	FROM tasks
 	JOIN statuses ON tasks.status_id = statuses.id
 	JOIN tags ON tasks.tag_id = tags.id
-	WHERE deleted_at IS NULL`
+	WHERE deleted_at IS NULL
+	ORDER BY tasks.id ASC`
 	rows, err := database.DB.Query(query)
 	if err != nil {
 		return nil, err
