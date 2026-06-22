@@ -17,7 +17,7 @@ func createTask(context *gin.Context) {
 	}
 
 	task := models.Task{
-		UsersID:     3,
+		UsersID:     context.GetInt64("user_id"),
 		Title:       taskDTO.Title,
 		Description: taskDTO.Description,
 		StatusID:    taskDTO.StatusID,
@@ -36,7 +36,7 @@ func createTask(context *gin.Context) {
 }
 
 func getTasks(context *gin.Context) {
-	tasks, err := models.GetAllTasks()
+	tasks, err := models.GetAllTasks(context.GetInt64("user_id"))
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
@@ -51,7 +51,7 @@ func getTaskByID(context *gin.Context) {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
 	}
-	task, err := models.GetTaskByID(id)
+	task, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 
 	context.JSON(http.StatusOK, task)
 }
@@ -63,7 +63,7 @@ func updateTask(context *gin.Context) {
 		return
 	}
 
-	taskDTO, err := models.GetTaskByID(id)
+	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
@@ -102,7 +102,7 @@ func deleteTask(context *gin.Context) {
 		return
 	}
 
-	taskDTO, err := models.GetTaskByID(id)
+	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return

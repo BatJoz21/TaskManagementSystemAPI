@@ -1,13 +1,19 @@
 package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"taskmanagementsystem.localhost/tmsapi/middlewares"
+)
 
 func RegisteredRoutes(server *gin.Engine) {
 	server.POST("/signup", signup)
+	server.POST("/login", login)
 
-	server.POST("/tasks", createTask)
-	server.GET("/tasks", getTasks)
-	server.GET("/tasks/:id", getTaskByID)
-	server.PUT("/tasks/:id", updateTask)
-	server.DELETE("/tasks/:id", deleteTask)
+	taskGroup := server.Group("/")
+	taskGroup.Use(middlewares.Authenticate)
+	taskGroup.POST("tasks", createTask)
+	taskGroup.GET("tasks", getTasks)
+	taskGroup.GET("tasks/:id", getTaskByID)
+	taskGroup.PUT("tasks/:id", updateTask)
+	taskGroup.DELETE("tasks/:id", deleteTask)
 }

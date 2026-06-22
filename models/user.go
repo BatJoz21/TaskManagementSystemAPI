@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"taskmanagementsystem.localhost/tmsapi/database"
@@ -11,6 +12,7 @@ type User struct {
 	ID        int64     `json:"id"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
+	Status    string    `json:"status"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
 	CreatedAt time.Time `json:"created_at"`
@@ -39,6 +41,41 @@ func (u *User) Save() error {
 
 	userId, err := result.LastInsertId()
 	u.ID = userId
+	if err != nil {
+		return err
+	}
 
+	err = u.SetNewUserRole()
 	return err
+}
+
+func (u *User) SetNewUserRole() error {
+	query := `INSERT INTO user_roles(user_id, role)
+		VALUES (?, ?)`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.ID, "user")
+	return err
+}
+
+func (u *User) ValidateCredentials() error {
+	query := `SELECT id, password FROM theusers WHERE email = ? && status IS NULL`
+	row := database.DB.QueryRow(query, u.Email)
+
+	var retreivedPassword string
+	err := row.Scan(&u.ID, &retreivedPassword)
+	if err != nil {
+		return err
+	}
+
+	isValid := utils.CheckPasswordHash(u.Password, retreivedPassword)
+	if !isValid {
+		return errors.New("Credentials invalid")
+	}
+
+	return nil
 }

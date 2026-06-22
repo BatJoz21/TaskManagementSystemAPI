@@ -40,7 +40,7 @@ func (t *Task) Save() error {
 	return err
 }
 
-func GetAllTasks() ([]GetTaskResponse, error) {
+func GetAllTasks(users_id int64) ([]GetTaskResponse, error) {
 	query := `
 	SELECT
 		tasks.id,
@@ -57,9 +57,9 @@ func GetAllTasks() ([]GetTaskResponse, error) {
 	FROM tasks
 	JOIN statuses ON tasks.status_id = statuses.id
 	JOIN tags ON tasks.tag_id = tags.id
-	WHERE deleted_at IS NULL
+	WHERE tasks.deleted_at IS NULL && tasks.users_id = ?
 	ORDER BY tasks.id ASC`
-	rows, err := database.DB.Query(query)
+	rows, err := database.DB.Query(query, users_id)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func GetAllTasks() ([]GetTaskResponse, error) {
 	return tasks, nil
 }
 
-func GetTaskByID(id int64) (*GetTaskResponse, error) {
+func GetTaskByID(id, users_id int64) (*GetTaskResponse, error) {
 	query := `
 	SELECT
 		tasks.id,
@@ -97,8 +97,8 @@ func GetTaskByID(id int64) (*GetTaskResponse, error) {
 	FROM tasks
 	JOIN statuses ON tasks.status_id = statuses.id
 	JOIN tags ON tasks.tag_id = tags.id
-	WHERE tasks.id = ? && deleted_at IS NULL`
-	row := database.DB.QueryRow(query, id)
+	WHERE tasks.id = ? && tasks.deleted_at IS NULL && tasks.users_id = ?`
+	row := database.DB.QueryRow(query, id, users_id)
 
 	var task GetTaskResponse
 	err := row.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusName, &task.DueDate,
@@ -110,7 +110,7 @@ func GetTaskByID(id int64) (*GetTaskResponse, error) {
 	return &task, nil
 }
 
-func (t Task) Update() error {
+func (t *Task) Update() error {
 	query := `UPDATE tasks 
 	SET
 		title = ?,
@@ -131,7 +131,7 @@ func (t Task) Update() error {
 	return err
 }
 
-func (t Task) Delete() error {
+func (t *Task) Delete() error {
 	query := `UPDATE tasks SET deleted_at = ? WHERE id = ?`
 	stmt, err := database.DB.Prepare(query)
 	if err != nil {

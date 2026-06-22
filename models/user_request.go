@@ -6,3 +6,8 @@ type CreateUserStruct struct {
 	Email     string `json:"email" binding:"required"`
 	Password  string `json:"password" binding:"required"`
 }
+
+type LoginUserStruct struct {
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
