@@ -9,15 +9,16 @@ import (
 )
 
 type User struct {
-	ID        int64     `json:"id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Status    string    `json:"status"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
+	ID             int64     `json:"id"`
+	FirstName      string    `json:"first_name"`
+	LastName       string    `json:"last_name"`
+	Status         string    `json:"status"`
+	ProfilePicture string    `json:"profile_picture"`
+	Email          string    `json:"email"`
+	Password       string    `json:"password"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	DeletedAt      time.Time `json:"deleted_at"`
 }
 
 func (u *User) Save() error {
@@ -63,11 +64,17 @@ func (u *User) SetNewUserRole() error {
 }
 
 func (u *User) ValidateCredentials() error {
-	query := `SELECT id, password FROM theusers WHERE email = ? && status IS NULL`
+	query := `SELECT 
+		id, 
+		first_name, 
+		last_name, 
+		password 
+	FROM theusers 
+	WHERE email = ? && status IS NULL`
 	row := database.DB.QueryRow(query, u.Email)
 
 	var retreivedPassword string
-	err := row.Scan(&u.ID, &retreivedPassword)
+	err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &retreivedPassword)
 	if err != nil {
 		return err
 	}
@@ -78,4 +85,17 @@ func (u *User) ValidateCredentials() error {
 	}
 
 	return nil
+}
+
+func (u *User) GetUserRole() (string, error) {
+	query := `SELECT role FROM user_roles WHERE user_id = ?`
+	row := database.DB.QueryRow(query, u.ID)
+
+	var retreivedRole string
+	err := row.Scan(&retreivedRole)
+	if err != nil {
+		return "", err
+	}
+
+	return retreivedRole, nil
 }

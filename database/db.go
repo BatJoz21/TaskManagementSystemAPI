@@ -56,7 +56,7 @@ func createTables() {
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		tag_id INTEGER UNSIGNED NOT NULL,
-		deleted_at DATETIME NOT NULL,
+		deleted_at DATETIME,
 
 		CONSTRAINT user_id_fk
 			FOREIGN KEY(users_id)
@@ -86,6 +86,7 @@ func createTables() {
 		first_name VARCHAR(150) NOT NULL,
 		last_name VARCHAR(150) NOT NULL,
 		status VARCHAR(200),
+		profile_picture VARCHAR(225),
 		email VARCHAR(225) UNIQUE NOT NULL,
 		password VARCHAR(225) NOT NULL,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

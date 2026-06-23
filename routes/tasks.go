@@ -36,7 +36,13 @@ func createTask(context *gin.Context) {
 }
 
 func getTasks(context *gin.Context) {
-	tasks, err := models.GetAllTasks(context.GetInt64("user_id"))
+	// Read query parameters
+	sort := context.Query("sort")
+	order := context.DefaultQuery("order", "ASC")
+	status := context.Query("status")
+	tag := context.Query("tag")
+
+	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
