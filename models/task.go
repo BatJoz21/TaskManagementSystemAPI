@@ -39,7 +39,7 @@ func (t *Task) Save() error {
 	return err
 }
 
-func GetAllTasks(users_id int64, sort, order, status, tag string) ([]GetTaskResponse, error) {
+func GetAllTasks(users_id int64, sort, order, status, tag string, isDeleted bool) ([]GetTaskResponse, error) {
 	query := `
 	SELECT
 		tasks.id,
@@ -56,7 +56,13 @@ func GetAllTasks(users_id int64, sort, order, status, tag string) ([]GetTaskResp
 	FROM tasks
 	JOIN statuses ON tasks.status_id = statuses.id
 	JOIN tags ON tasks.tag_id = tags.id
-	WHERE tasks.deleted_at IS NULL AND tasks.users_id = ?`
+	WHERE tasks.users_id = ?`
+
+	if isDeleted {
+		query += ` AND tasks.deleted_at IS NOT NULL`
+	} else {
+		query += ` AND tasks.deleted_at IS NULL`
+	}
 
 	allowedStatus := map[string]bool{"in_progress": true, "cancelled": true, "complete": true}
 	if allowedStatus[status] {
@@ -106,22 +112,24 @@ func GetTaskByID(id, users_id int64) (*GetTaskResponse, error) {
 		tasks.users_id,
 		tasks.title,
 		tasks.description,
+		tasks.status_id,
 		statuses.name AS status_name,
 		tasks.due_date,
 		tasks.attachment,
+		tasks.tag_id,
+		tags.name_tag AS tag_name,
 		tasks.created_at,
 		tasks.updated_at,
-		tags.name_tag AS tag_name,
 		tasks.deleted_at
 	FROM tasks
 	JOIN statuses ON tasks.status_id = statuses.id
 	JOIN tags ON tasks.tag_id = tags.id
-	WHERE tasks.id = ? && tasks.deleted_at IS NULL && tasks.users_id = ?`
+	WHERE tasks.id = ? && tasks.users_id = ?`
 	row := database.DB.QueryRow(query, id, users_id)
 
 	var task GetTaskResponse
-	err := row.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusName, &task.DueDate,
-		&task.Attachment, &task.CreatedAt, &task.UpdatedAt, &task.TagName, &task.DeletedAt)
+	err := row.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusID, &task.StatusName, &task.DueDate,
+		&task.Attachment, &task.TagID, &task.TagName, &task.CreatedAt, &task.UpdatedAt, &task.DeletedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +155,30 @@ func (t *Task) Update() error {
 
 	_, err = stmt.Exec(t.Title, t.Description, t.StatusID, t.DueDate, t.Attachment, t.TagID, t.ID)
 
+	return err
+}
+
+func (t *Task) CompleteTask() error {
+	query := `UPDATE tasks SET status_id = 3 WHERE id = ? AND deleted_at IS NULL`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(t.ID)
+	return err
+}
+
+func (t *Task) RestoreTask() error {
+	query := `UPDATE tasks SET deleted_at = NULL WHERE id = ?`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(t.ID)
 	return err
 }
 

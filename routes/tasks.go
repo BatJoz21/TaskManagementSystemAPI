@@ -12,7 +12,7 @@ func createTask(context *gin.Context) {
 	var taskDTO models.CreateTaskRequest
 	err := context.ShouldBindJSON(&taskDTO)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -28,11 +28,11 @@ func createTask(context *gin.Context) {
 
 	err = task.Save()
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message:": "task created", "task:": task})
+	context.JSON(http.StatusOK, gin.H{"message": "task created", "task": task})
 }
 
 func getTasks(context *gin.Context) {
@@ -42,7 +42,23 @@ func getTasks(context *gin.Context) {
 	status := context.Query("status")
 	tag := context.Query("tag")
 
-	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag)
+	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, false)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, tasks)
+}
+
+func getDeletedTasks(context *gin.Context) {
+	// Read query parameters
+	sort := context.Query("sort")
+	order := context.DefaultQuery("order", "ASC")
+	status := context.Query("status")
+	tag := context.Query("tag")
+
+	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, true)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
@@ -65,20 +81,20 @@ func getTaskByID(context *gin.Context) {
 func updateTask(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
 	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
 	var updatedTask models.UpdateTaskRequest
 	err = context.ShouldBindJSON(&updatedTask)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -94,23 +110,83 @@ func updateTask(context *gin.Context) {
 	}
 	err = task.Update()
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message:": "Task updated", "task:": task})
+	context.JSON(http.StatusOK, gin.H{"message": "Task updated", "task": task})
 }
 
-func deleteTask(context *gin.Context) {
+func markTaskComplete(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
 	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	task := models.Task{
+		ID:          taskDTO.ID,
+		UsersID:     taskDTO.UsersID,
+		Title:       taskDTO.Title,
+		Description: taskDTO.Description,
+		DueDate:     taskDTO.DueDate,
+		Attachment:  taskDTO.Attachment,
+	}
+	err = task.CompleteTask()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Task marked complete"})
+}
+
+func restoreTask(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	task := models.Task{
+		ID:          taskDTO.ID,
+		UsersID:     taskDTO.UsersID,
+		Title:       taskDTO.Title,
+		Description: taskDTO.Description,
+		DueDate:     taskDTO.DueDate,
+		Attachment:  taskDTO.Attachment,
+	}
+	err = task.RestoreTask()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Task restored"})
+}
+
+func deleteTask(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -124,9 +200,9 @@ func deleteTask(context *gin.Context) {
 	}
 	err = task.Delete()
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message:": "Task deleted"})
+	context.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
 }

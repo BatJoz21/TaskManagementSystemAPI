@@ -13,7 +13,10 @@ func RegisteredRoutes(server *gin.Engine) {
 	taskGroup.Use(middlewares.Authenticate)
 	taskGroup.POST("tasks", createTask)
 	taskGroup.GET("tasks", getTasks)
+	taskGroup.GET("tasks/deleted", getDeletedTasks)
 	taskGroup.GET("tasks/:id", getTaskByID)
 	taskGroup.PUT("tasks/:id", updateTask)
+	taskGroup.PUT("tasks/:id/complete", markTaskComplete)
+	taskGroup.PUT("tasks/deleted/:id", restoreTask)
 	taskGroup.DELETE("tasks/:id", deleteTask)
 }
