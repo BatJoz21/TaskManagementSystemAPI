@@ -21,4 +21,5 @@ func RegisteredRoutes(server *gin.Engine) {
 	taskGroup.PUT("tasks/:id/complete", markTaskComplete)
 	taskGroup.PUT("tasks/deleted/:id", restoreTask)
 	taskGroup.DELETE("tasks/:id", deleteTask)
+	taskGroup.DELETE("tasks/:id/attachment/delete", deleteTaskAttachment)
 }

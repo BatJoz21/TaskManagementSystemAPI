@@ -15,8 +15,8 @@
 ## Phase 3 - File Management
 - [x] View Attachment
 - [x] Download Attachment
-- [ ] Replace Attachment
-- [ ] Delete Attachment
+- [x] Replace Attachment
+- [x] Delete Attachment
 
 ## Phase 4 - API Improvements
 - [ ] Pagination

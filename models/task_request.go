@@ -17,6 +17,5 @@ type UpdateTaskRequest struct {
 	Description string    `json:"description"`
 	StatusID    int64     `json:"status_id"`
 	DueDate     time.Time `json:"due_date"`
-	Attachment  *string   `json:"attachment"`
 	TagID       int64     `json:"tag_id"`
 }

@@ -206,3 +206,15 @@ func (t *Task) Delete() error {
 	_, err = stmt.Exec(time.Now(), t.ID)
 	return err
 }
+
+func (t *Task) DeleteAttachment() error {
+	query := `UPDATE tasks SET attachment = NULL WHERE id = ?`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(t.ID)
+	return err
+}

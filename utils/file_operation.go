@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -32,13 +33,7 @@ var allowedMimeTypes = map[string]bool{
 	"application/pdf": true,
 }
 
-func SaveTaskAttachment(context *gin.Context) (*string, error) {
-	// Get file
-	file, err := context.FormFile("attachment")
-	if err != nil {
-		return nil, nil
-	}
-
+func SaveTaskAttachment(file *multipart.FileHeader, context *gin.Context) (*string, error) {
 	// File Size Validation
 	if file.Size > MaxFileSize {
 		return nil, errors.New("File size cannot exceed 10 MB!")
@@ -87,6 +82,20 @@ func SaveTaskAttachment(context *gin.Context) (*string, error) {
 	}
 
 	return &filename, nil
+}
+
+func RemoveFileAttachment(fileName *string, u_id int64) error {
+	path := UploadRoots + TaskAttachmentDir + strconv.FormatInt(u_id, 10) + "/" + *fileName
+
+	_, err := os.Stat(path)
+	if err == nil {
+		err = os.Remove(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func getTaskAttachmentFilePath(user_id, fileName string) string {

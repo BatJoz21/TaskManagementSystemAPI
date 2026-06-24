@@ -39,10 +39,14 @@ func createTask(context *gin.Context) {
 	}
 
 	// Handle file uploads
-	attachment, err := utils.SaveTaskAttachment(context)
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
+	var attachment *string
+	file, err := context.FormFile("attachment")
+	if err == nil {
+		attachment, err = utils.SaveTaskAttachment(file, context)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
 	}
 
 	// Insert Task data to database
@@ -148,23 +152,66 @@ func downloadAttachmentFile(context *gin.Context) {
 }
 
 func updateTask(context *gin.Context) {
+	// Set up needed variable
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
+	status_id, err := strconv.ParseInt(context.PostForm("status_id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid status_id"})
+		return
+	}
+
+	tag_id, err := strconv.ParseInt(context.PostForm("tag_id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid tag_id"})
+		return
+	}
+
+	due_date, err := time.Parse(time.RFC3339, context.PostForm("due_date"))
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid due_date"})
+		return
+	}
+
+	// Get existed task
 	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	var updatedTask models.UpdateTaskRequest
-	err = context.ShouldBindJSON(&updatedTask)
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
+	// Get Data From Request
+	var updatedTask = models.UpdateTaskRequest{
+		Title:       context.PostForm("title"),
+		Description: context.PostForm("description"),
+		StatusID:    status_id,
+		DueDate:     due_date,
+		TagID:       tag_id,
+	}
+
+	// Handle attachment file
+	var attachment *string
+	file, err := context.FormFile("attachment")
+	if file != nil {
+		attachment, err = utils.SaveTaskAttachment(file, context)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		if taskDTO.Attachment != nil && *taskDTO.Attachment != "" {
+			err = utils.RemoveFileAttachment(taskDTO.Attachment, context.GetInt64("user_id"))
+			if err != nil {
+				context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+		}
+	} else {
+		attachment = taskDTO.Attachment
 	}
 
 	task := models.Task{
@@ -174,7 +221,7 @@ func updateTask(context *gin.Context) {
 		Description: updatedTask.Description,
 		StatusID:    updatedTask.StatusID,
 		DueDate:     updatedTask.DueDate,
-		Attachment:  updatedTask.Attachment,
+		Attachment:  attachment,
 		TagID:       updatedTask.TagID,
 	}
 	err = task.Update()
@@ -274,4 +321,44 @@ func deleteTask(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
+}
+
+func deleteTaskAttachment(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	if taskDTO.Attachment != nil && *taskDTO.Attachment != "" {
+		err = utils.RemoveFileAttachment(taskDTO.Attachment, context.GetInt64("user_id"))
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		task := models.Task{
+			ID:          taskDTO.ID,
+			UsersID:     taskDTO.UsersID,
+			Title:       taskDTO.Title,
+			Description: taskDTO.Description,
+			DueDate:     taskDTO.DueDate,
+			Attachment:  taskDTO.Attachment,
+		}
+		err = task.DeleteAttachment()
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		context.JSON(http.StatusOK, gin.H{"message": "Task attachment deleted"})
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Task has no attachment"})
+	}
 }
