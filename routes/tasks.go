@@ -3,29 +3,43 @@ package routes
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"taskmanagementsystem.localhost/tmsapi/models"
+	"taskmanagementsystem.localhost/tmsapi/utils"
 )
 
 func createTask(context *gin.Context) {
-	var taskDTO models.CreateTaskRequest
-	err := context.ShouldBindJSON(&taskDTO)
+	// Create DTO for Creating Task
+	status_id, _ := strconv.ParseInt(context.PostForm("status_id"), 10, 64)
+	tag_id, _ := strconv.ParseInt(context.PostForm("tag_id"), 10, 64)
+	t, _ := time.Parse(time.RFC3339, context.PostForm("due_date"))
+	taskDTO := models.CreateTaskRequest{
+		Title:       context.PostForm("title"),
+		Description: context.PostForm("description"),
+		StatusID:    status_id,
+		DueDate:     t,
+		TagID:       tag_id,
+	}
+
+	// Handle file uploads
+	attachment, err := utils.SaveTaskAttachment(context)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
+	// Insert Task data to database
 	task := models.Task{
 		UsersID:     context.GetInt64("user_id"),
 		Title:       taskDTO.Title,
 		Description: taskDTO.Description,
 		StatusID:    taskDTO.StatusID,
 		DueDate:     taskDTO.DueDate,
-		Attachment:  taskDTO.Attachment,
+		Attachment:  attachment,
 		TagID:       taskDTO.TagID,
 	}
-
 	err = task.Save()
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})

@@ -30,3 +30,9 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Ignore uploaded task attachments
+uploads/task_attachment/
+
+# Keep uploads directory
+!uploads/.gitkeep

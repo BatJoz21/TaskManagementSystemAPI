@@ -1,0 +1,34 @@
+# 🚀 Project Roadmap
+
+## Phase 1 - Authentication
+- [x] JWT Login
+- [x] JWT Route Protection
+- [x] CI4 Login via Go API
+- [x] CI4 Logout
+
+## Phase 2 - Task Management
+- [x] CRUD
+- [x] Sorting
+- [x] Filtering
+- [x] File Upload
+
+## Phase 3 - File Management
+- [ ] View Attachment
+- [ ] Download Attachment
+- [ ] Replace Attachment
+- [ ] Delete Attachment
+
+## Phase 4 - API Improvements
+- [ ] Pagination
+- [ ] Dashboard Statistics Endpoint
+
+## Phase 5 - User Management
+- [ ] User Profile
+- [ ] Profile Image Upload
+- [ ] Change Password
+- [ ] Refresh JWT Token
+
+## Phase 6 - DevOps & Testing
+- [ ] Docker
+- [ ] Unit Tests
+- [ ] Integration Tests

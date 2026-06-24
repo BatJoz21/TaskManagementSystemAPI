@@ -9,7 +9,6 @@ type CreateTaskRequest struct {
 	Description string    `json:"description" binding:"required"`
 	StatusID    int64     `json:"status_id" binding:"required"`
 	DueDate     time.Time `json:"due_date" binding:"required"`
-	Attachment  *string   `json:"attachment"`
 	TagID       int64     `json:"tag_id" binding:"required"`
 }
 
