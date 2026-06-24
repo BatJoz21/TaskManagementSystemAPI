@@ -78,7 +78,7 @@ func SaveTaskAttachment(context *gin.Context) (*string, error) {
 	os.MkdirAll(UploadRoots+TaskAttachmentDir+u_id, os.ModePerm)
 
 	// Upload the file
-	filename := fmt.Sprintf("task_%d_user_%d%s", time.Now().UnixNano(), u_id, extension)
+	filename := fmt.Sprintf("task_%d_user_%s%s", time.Now().UnixNano(), u_id, extension)
 	path := getTaskAttachmentFilePath(u_id, filename)
 
 	err = context.SaveUploadedFile(file, path)

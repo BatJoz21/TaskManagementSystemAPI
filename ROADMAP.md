@@ -13,8 +13,8 @@
 - [x] File Upload
 
 ## Phase 3 - File Management
-- [ ] View Attachment
-- [ ] Download Attachment
+- [x] View Attachment
+- [x] Download Attachment
 - [ ] Replace Attachment
 - [ ] Delete Attachment
 

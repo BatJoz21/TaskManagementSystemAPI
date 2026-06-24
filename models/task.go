@@ -137,6 +137,19 @@ func GetTaskByID(id, users_id int64) (*GetTaskResponse, error) {
 	return &task, nil
 }
 
+func GetTaskAttachmentByID(id int64) (*GetAttachmentResponse, error) {
+	query := `SELECT attachment FROM tasks WHERE id = ? AND deleted_at IS NULL`
+	row := database.DB.QueryRow(query, id)
+
+	var responseData GetAttachmentResponse
+	err := row.Scan(&responseData.Attachment)
+	if err != nil {
+		return nil, err
+	}
+
+	return &responseData, nil
+}
+
 func (t *Task) Update() error {
 	query := `UPDATE tasks 
 	SET

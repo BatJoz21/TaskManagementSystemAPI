@@ -12,14 +12,29 @@ import (
 
 func createTask(context *gin.Context) {
 	// Create DTO for Creating Task
-	status_id, _ := strconv.ParseInt(context.PostForm("status_id"), 10, 64)
-	tag_id, _ := strconv.ParseInt(context.PostForm("tag_id"), 10, 64)
-	t, _ := time.Parse(time.RFC3339, context.PostForm("due_date"))
+	status_id, err := strconv.ParseInt(context.PostForm("status_id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid status_id"})
+		return
+	}
+
+	tag_id, err := strconv.ParseInt(context.PostForm("tag_id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid tag_id"})
+		return
+	}
+
+	due_date, err := time.Parse(time.RFC3339, context.PostForm("due_date"))
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid due_date"})
+		return
+	}
+
 	taskDTO := models.CreateTaskRequest{
 		Title:       context.PostForm("title"),
 		Description: context.PostForm("description"),
 		StatusID:    status_id,
-		DueDate:     t,
+		DueDate:     due_date,
 		TagID:       tag_id,
 	}
 
@@ -90,6 +105,46 @@ func getTaskByID(context *gin.Context) {
 	task, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 
 	context.JSON(http.StatusOK, task)
+}
+
+func viewAttachmentFile(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		return
+	}
+
+	attachmentInfo, err := models.GetTaskAttachmentByID(id)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		return
+	}
+
+	path := utils.UploadRoots + utils.TaskAttachmentDir + strconv.FormatInt(context.GetInt64("user_id"), 10) + "/" + *attachmentInfo.Attachment
+
+	context.Header("Content-Disposition", "inline")
+	context.File(path)
+}
+
+func downloadAttachmentFile(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		return
+	}
+
+	attachmentInfo, err := models.GetTaskAttachmentByID(id)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		return
+	}
+
+	path := utils.UploadRoots + utils.TaskAttachmentDir + strconv.FormatInt(context.GetInt64("user_id"), 10) + "/" + *attachmentInfo.Attachment
+
+	context.FileAttachment(
+		path,
+		*attachmentInfo.Attachment,
+	)
 }
 
 func updateTask(context *gin.Context) {

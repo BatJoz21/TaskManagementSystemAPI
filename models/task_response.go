@@ -20,3 +20,8 @@ type GetTaskResponse struct {
 	UpdatedAt   time.Time    `json:"updated_at"`
 	DeletedAt   sql.NullTime `json:"deleted_at"`
 }
+
+type GetAttachmentResponse struct {
+	ID         int64   `json:"id"`
+	Attachment *string `json:"attachment"`
+}
