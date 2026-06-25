@@ -39,7 +39,7 @@ func (t *Task) Save() error {
 	return err
 }
 
-func GetAllTasks(users_id int64, sort, order, status, tag string, isDeleted bool) ([]GetTaskResponse, error) {
+func GetAllTasks(users_id int64, sort, order, status, tag string, limit, offset int, isDeleted bool) ([]GetTaskResponse, error) {
 	query := `
 	SELECT
 		tasks.id,
@@ -82,9 +82,9 @@ func GetAllTasks(users_id int64, sort, order, status, tag string, isDeleted bool
 		order = "ASC"
 	}
 
-	query += ` ORDER BY tasks.` + sort + ` ` + order
+	query += ` ORDER BY tasks.` + sort + ` ` + order + ` LIMIT ? OFFSET ?`
 
-	rows, err := database.DB.Query(query, users_id)
+	rows, err := database.DB.Query(query, users_id, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +135,19 @@ func GetTaskByID(id, users_id int64) (*GetTaskResponse, error) {
 	}
 
 	return &task, nil
+}
+
+func GetTotalTasks(users_id int64) (*GetTotalTaskResponse, error) {
+	query := `SELECT COUNT(*) AS total_task FROM tasks WHERE users_id = ? AND deleted_at IS NULL`
+	row := database.DB.QueryRow(query, users_id)
+
+	var total GetTotalTaskResponse
+	err := row.Scan(&total.TotalTask)
+	if err != nil {
+		return nil, err
+	}
+
+	return &total, nil
 }
 
 func GetTaskAttachmentByID(id int64) (*GetAttachmentResponse, error) {

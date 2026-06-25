@@ -10,6 +10,8 @@ import (
 	"taskmanagementsystem.localhost/tmsapi/utils"
 )
 
+const limitPerPage = 2
+
 func createTask(context *gin.Context) {
 	// Create DTO for Creating Task
 	status_id, err := strconv.ParseInt(context.PostForm("status_id"), 10, 64)
@@ -75,13 +77,31 @@ func getTasks(context *gin.Context) {
 	status := context.Query("status")
 	tag := context.Query("tag")
 
-	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, false)
+	// Pagination
+	page, err := strconv.Atoi(context.DefaultQuery("page", "1"))
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		return
+	}
+	offset := (page - 1) * limitPerPage
+
+	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, limitPerPage, offset, false)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
 	}
 
 	context.JSON(http.StatusOK, tasks)
+}
+
+func getTotalTask(context *gin.Context) {
+	totalDTO, err := models.GetTotalTasks(context.GetInt64("user_id"))
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, totalDTO)
 }
 
 func getDeletedTasks(context *gin.Context) {
@@ -91,7 +111,15 @@ func getDeletedTasks(context *gin.Context) {
 	status := context.Query("status")
 	tag := context.Query("tag")
 
-	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, true)
+	// Pagination
+	page, err := strconv.Atoi(context.DefaultQuery("page", "1"))
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message:": err.Error()})
+		return
+	}
+	offset := (page - 1) * limitPerPage
+
+	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, limitPerPage, offset, true)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return

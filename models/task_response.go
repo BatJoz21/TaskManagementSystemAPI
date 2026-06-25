@@ -25,3 +25,7 @@ type GetAttachmentResponse struct {
 	ID         int64   `json:"id"`
 	Attachment *string `json:"attachment"`
 }
+
+type GetTotalTaskResponse struct {
+	TotalTask int `json:"total_task"`
+}
