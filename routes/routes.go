@@ -15,7 +15,6 @@ func RegisteredRoutes(server *gin.Engine) {
 	taskGroup.GET("tasks", getTasks)
 	taskGroup.GET("tasks/deleted", getDeletedTasks)
 	taskGroup.GET("tasks/:id", getTaskByID)
-	taskGroup.GET("tasks/total", getTotalTask)
 	taskGroup.GET("tasks/:id/attachment/view", viewAttachmentFile)
 	taskGroup.GET("tasks/:id/attachment/download", downloadAttachmentFile)
 	taskGroup.PUT("tasks/:id", updateTask)

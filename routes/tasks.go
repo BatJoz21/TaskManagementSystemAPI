@@ -76,6 +76,7 @@ func getTasks(context *gin.Context) {
 	order := context.DefaultQuery("order", "ASC")
 	status := context.Query("status")
 	tag := context.Query("tag")
+	search := context.Query("search")
 
 	// Pagination
 	page, err := strconv.Atoi(context.DefaultQuery("page", "1"))
@@ -85,23 +86,13 @@ func getTasks(context *gin.Context) {
 	}
 	offset := (page - 1) * limitPerPage
 
-	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, limitPerPage, offset, false)
+	tasks, total, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, search, limitPerPage, offset, false)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, tasks)
-}
-
-func getTotalTask(context *gin.Context) {
-	totalDTO, err := models.GetTotalTasks(context.GetInt64("user_id"))
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
-		return
-	}
-
-	context.JSON(http.StatusOK, totalDTO)
+	context.JSON(http.StatusOK, gin.H{"tasks": tasks, "total": total})
 }
 
 func getDeletedTasks(context *gin.Context) {
@@ -110,6 +101,7 @@ func getDeletedTasks(context *gin.Context) {
 	order := context.DefaultQuery("order", "ASC")
 	status := context.Query("status")
 	tag := context.Query("tag")
+	search := context.Query("search")
 
 	// Pagination
 	page, err := strconv.Atoi(context.DefaultQuery("page", "1"))
@@ -119,13 +111,13 @@ func getDeletedTasks(context *gin.Context) {
 	}
 	offset := (page - 1) * limitPerPage
 
-	tasks, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, limitPerPage, offset, true)
+	tasks, total, err := models.GetAllTasks(context.GetInt64("user_id"), sort, order, status, tag, search, limitPerPage, offset, true)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message:": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, tasks)
+	context.JSON(http.StatusOK, gin.H{"tasks": tasks, "total": total})
 }
 
 func getTaskByID(context *gin.Context) {

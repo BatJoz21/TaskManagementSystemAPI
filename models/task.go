@@ -20,6 +20,11 @@ type Task struct {
 	DeletedAt   time.Time `json:"deleted_at"`
 }
 
+var allowedStatus = map[string]bool{"in_progress": true, "cancelled": true, "complete": true}
+var allowedTags = map[string]bool{"Work": true, "Study": true, "Personal": true, "Urgent": true}
+var allowedSorts = map[string]bool{"id": true, "title": true, "due_date": true}
+var allowedOrder = map[string]bool{"ASC": true, "DESC": true}
+
 func (t *Task) Save() error {
 	query := `INSERT INTO tasks(users_id, title, description, status_id, due_date, attachment, tag_id)
 	VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -39,7 +44,7 @@ func (t *Task) Save() error {
 	return err
 }
 
-func GetAllTasks(users_id int64, sort, order, status, tag string, limit, offset int, isDeleted bool) ([]GetTaskResponse, error) {
+func GetAllTasks(users_id int64, sort, order, status, tag, search string, limit, offset int, isDeleted bool) ([]GetTaskResponse, int, error) {
 	query := `
 	SELECT
 		tasks.id,
@@ -64,17 +69,26 @@ func GetAllTasks(users_id int64, sort, order, status, tag string, limit, offset 
 		query += ` AND tasks.deleted_at IS NULL`
 	}
 
-	allowedStatus := map[string]bool{"in_progress": true, "cancelled": true, "complete": true}
+	var args []any
+	args = append(args, users_id)
+
 	if allowedStatus[status] {
-		query += ` HAVING status_name = "` + status + `"`
-	}
-	allowedTags := map[string]bool{"Work": true, "Study": true, "Personal": true, "Urgent": true}
-	if allowedTags[tag] {
-		query += ` HAVING tag_name = "` + tag + `"`
+		query += ` AND status_name = ?`
+		args = append(args, status)
 	}
 
-	allowedSorts := map[string]bool{"id": true, "title": true, "due_date": true}
-	allowedOrder := map[string]bool{"ASC": true, "DESC": true}
+	if allowedTags[tag] {
+		query += ` AND tag_name = ?`
+		args = append(args, tag)
+	}
+
+	if search != "" {
+		query += ` AND tasks.title LIKE ?`
+		searchPattern := "%" + search + "%"
+
+		args = append(args, searchPattern)
+	}
+
 	if !allowedSorts[sort] {
 		sort = "id"
 	}
@@ -83,10 +97,11 @@ func GetAllTasks(users_id int64, sort, order, status, tag string, limit, offset 
 	}
 
 	query += ` ORDER BY tasks.` + sort + ` ` + order + ` LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
 
-	rows, err := database.DB.Query(query, users_id, limit, offset)
+	rows, err := database.DB.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -96,13 +111,18 @@ func GetAllTasks(users_id int64, sort, order, status, tag string, limit, offset 
 		err = rows.Scan(&task.ID, &task.UsersID, &task.Title, &task.Description, &task.StatusName, &task.DueDate,
 			&task.Attachment, &task.CreatedAt, &task.UpdatedAt, &task.TagName, &task.DeletedAt)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		tasks = append(tasks, task)
 	}
 
-	return tasks, nil
+	total, err := GetTotalTasks(users_id, sort, order, status, tag, search, isDeleted)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return tasks, *total, nil
 }
 
 func GetTaskByID(id, users_id int64) (*GetTaskResponse, error) {
@@ -137,12 +157,50 @@ func GetTaskByID(id, users_id int64) (*GetTaskResponse, error) {
 	return &task, nil
 }
 
-func GetTotalTasks(users_id int64) (*GetTotalTaskResponse, error) {
-	query := `SELECT COUNT(*) AS total_task FROM tasks WHERE users_id = ? AND deleted_at IS NULL`
-	row := database.DB.QueryRow(query, users_id)
+func GetTotalTasks(users_id int64, sort, order, status, tag, search string, isDeleted bool) (*int, error) {
+	query := `SELECT COUNT(*) AS total_task
+		FROM tasks
+		JOIN statuses ON tasks.status_id = statuses.id
+		JOIN tags ON tasks.tag_id = tags.id
+		WHERE tasks.users_id = ?`
 
-	var total GetTotalTaskResponse
-	err := row.Scan(&total.TotalTask)
+	if isDeleted {
+		query += ` AND tasks.deleted_at IS NOT NULL`
+	} else {
+		query += ` AND tasks.deleted_at IS NULL`
+	}
+
+	var args []any
+	args = append(args, users_id)
+
+	if allowedStatus[status] {
+		query += ` AND status_name = ?`
+		args = append(args, status)
+	}
+
+	if allowedTags[tag] {
+		query += ` AND tag_name = ?`
+		args = append(args, tag)
+	}
+
+	if search != "" {
+		query += ` AND tasks.title LIKE ?`
+		searchPattern := "%" + search + "%"
+
+		args = append(args, searchPattern)
+	}
+
+	if !allowedSorts[sort] {
+		sort = "id"
+	}
+	if !allowedOrder[order] {
+		order = "ASC"
+	}
+
+	row := database.DB.QueryRow(query, args...)
+
+	var total int
+	err := row.Scan(&total)
 	if err != nil {
 		return nil, err
 	}
