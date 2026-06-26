@@ -102,6 +102,29 @@ func getUser(context *gin.Context) {
 	context.JSON(http.StatusOK, user)
 }
 
+func getProfilePicture(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	user, err := models.GetUser(id)
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+
+	if user.ProfilePicture == nil {
+		context.Status(http.StatusNoContent)
+		return
+	}
+
+	path := utils.GetProfilePicturePath(user.ProfilePicture, id)
+
+	context.File(path)
+}
+
 func updateUser(context *gin.Context) {
 	// Set up needed variable
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
@@ -128,7 +151,7 @@ func updateUser(context *gin.Context) {
 	var profile_picture *string
 	file, err := context.FormFile("profile_picture")
 	if file != nil {
-		profile_picture, err = utils.SaveProfilePicture(file, context)
+		profile_picture, err = utils.SaveProfilePicture(file, id, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -136,7 +159,7 @@ func updateUser(context *gin.Context) {
 
 		// Remove old profile picture
 		if existUser.ProfilePicture != nil && *existUser.ProfilePicture != "" {
-			err = utils.RemoveFileAttachment(existUser.ProfilePicture, utils.ProfilePictureDir, context.GetInt64("user_id"))
+			err = utils.RemoveFileAttachment(existUser.ProfilePicture, utils.ProfilePictureDir, id)
 			if err != nil {
 				context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 				return

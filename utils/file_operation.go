@@ -39,8 +39,12 @@ var allowedMimeTypes = map[string]bool{
 	"application/pdf": true,
 }
 var allowedImageMimeTypes = map[string]bool{
-	"image/jpeg":      true,
-	"image/png":       true,
+	"image/jpeg": true,
+	"image/png":  true,
+}
+
+func GetProfilePicturePath(filename *string, userID int64) string {
+	return filepath.Join(UploadRoots, "user", "profile_picture", strconv.FormatInt(userID, 10), *filename)
 }
 
 func SaveTaskAttachment(file *multipart.FileHeader, context *gin.Context) (*string, error) {
@@ -79,15 +83,23 @@ func SaveTaskAttachment(file *multipart.FileHeader, context *gin.Context) (*stri
 	}
 
 	// Save the Attachment
-	filename, err := SaveFile(file, TaskAttachmentDir, extension, context)
+	// Create directory
+	u_id := strconv.FormatInt(context.GetInt64("user_id"), 10)
+	os.MkdirAll(UploadRoots+TaskAttachmentDir+u_id, os.ModePerm)
+
+	// Upload the file
+	filename := fmt.Sprintf("task_%d_user_%s%s", time.Now().UnixNano(), u_id, extension)
+	path := filepath.Join(UploadRoots, TaskAttachmentDir, u_id, filename)
+
+	err = context.SaveUploadedFile(file, path)
 	if err != nil {
 		return nil, err
 	}
 
-	return filename, nil
+	return &filename, nil
 }
 
-func SaveProfilePicture(file *multipart.FileHeader, context *gin.Context) (*string, error) {
+func SaveProfilePicture(file *multipart.FileHeader, id int64, context *gin.Context) (*string, error) {
 	// Validate file size
 	if file.Size > MaxFileSize {
 		return nil, errors.New("Image size exceed 10 MB")
@@ -118,21 +130,29 @@ func SaveProfilePicture(file *multipart.FileHeader, context *gin.Context) (*stri
 	}
 
 	// Save profile picture
-	filename, err := SaveFile(file, ProfilePictureDir, extension, context)
+	// Create directory
+	u_id := strconv.FormatInt(id, 10)
+	os.MkdirAll(UploadRoots+ProfilePictureDir+u_id, os.ModePerm)
+
+	// Upload the file
+	filename := fmt.Sprintf("profile_%d_user_%s%s", time.Now().UnixNano(), u_id, extension)
+	path := filepath.Join(UploadRoots, ProfilePictureDir, u_id, filename)
+
+	err = context.SaveUploadedFile(file, path)
 	if err != nil {
 		return nil, err
 	}
 
-	return filename, nil
+	return &filename, nil
 }
 
-func SaveFile(file *multipart.FileHeader, directory, extension string, context *gin.Context) (*string, error) {
+func SaveFile(file *multipart.FileHeader, directory, type_upload, extension string, context *gin.Context) (*string, error) {
 	// Create directory
 	u_id := strconv.FormatInt(context.GetInt64("user_id"), 10)
 	os.MkdirAll(UploadRoots+directory+u_id, os.ModePerm)
 
 	// Upload the file
-	filename := fmt.Sprintf("task_%d_user_%s%s", time.Now().UnixNano(), u_id, extension)
+	filename := fmt.Sprintf("%s_%d_user_%s%s", type_upload, time.Now().UnixNano(), u_id, extension)
 	path := filepath.Join(UploadRoots, directory, u_id, filename)
 
 	err := context.SaveUploadedFile(file, path)
