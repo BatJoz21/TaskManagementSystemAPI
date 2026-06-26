@@ -23,6 +23,7 @@ func RegisteredRoutes(server *gin.Engine) {
 	userGroup.PUT("tasks/:id/complete", markTaskComplete)
 	userGroup.PUT("tasks/deleted/:id", restoreTask)
 	userGroup.PUT("users/profile/:id", updateUser)
+	userGroup.PUT("users/change-password", changeUserPassword)
 	userGroup.DELETE("tasks/:id", deleteTask)
 	userGroup.DELETE("tasks/:id/attachment/delete", deleteTaskAttachment)
 

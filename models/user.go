@@ -33,6 +33,7 @@ func (u *User) Save() error {
 	}
 	defer stmt.Close()
 
+	// Hashing password
 	hashedPass, err := utils.HashPassword(u.Password)
 	if err != nil {
 		return err
@@ -49,6 +50,7 @@ func (u *User) Save() error {
 		return err
 	}
 
+	// Give new user a role
 	err = u.SetNewUserRole()
 	return err
 }
@@ -76,6 +78,7 @@ func GetUsers(sort, order string) (*[]ResponseUserStruct, int, error) {
 	FROM theusers
 	JOIN user_roles ON theusers.id = user_roles.user_id`
 
+	// Filtering
 	if value, ok := allowedUserSorts[sort]; ok {
 		sort = value
 	} else {
@@ -156,6 +159,7 @@ func (u *User) ValidateCredentials() error {
 		return err
 	}
 
+	// Checking password credentials
 	isValid := utils.CheckPasswordHash(u.Password, retreivedPassword)
 	if !isValid {
 		return errors.New("Credentials invalid")
@@ -194,6 +198,25 @@ func (u *User) UpdateRole() error {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(u.Role, u.ID)
+
+	return err
+}
+
+func (u *User) ChangePassword() error {
+	query := `UPDATE theusers SET password = ? WHERE email = ?`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	// Hashing password
+	hashedPass, err := utils.HashPassword(u.Password)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(hashedPass, u.Email)
 
 	return err
 }

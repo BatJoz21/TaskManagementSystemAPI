@@ -24,7 +24,7 @@
 - [x] Dashboard Statistics Endpoint
 
 ## Phase 5 - User Management
-- [ ] User Profile
+- [x] User Profile
 - [x] Profile Image Upload
 - [ ] Change Password
 - [ ] Refresh JWT Token

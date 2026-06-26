@@ -33,6 +33,7 @@ func signup(context *gin.Context) {
 }
 
 func login(context *gin.Context) {
+	// Get login data from login form
 	var userLogin models.LoginUserStruct
 	err := context.ShouldBindJSON(&userLogin)
 	if err != nil {
@@ -44,6 +45,8 @@ func login(context *gin.Context) {
 		Email:    userLogin.Email,
 		Password: userLogin.Password,
 	}
+
+	// Checking credentials
 	err = user.ValidateCredentials()
 	if err != nil {
 		context.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
@@ -56,6 +59,7 @@ func login(context *gin.Context) {
 		return
 	}
 
+	// Generate JWT token
 	token, err := utils.GenerateToken(user.Email, role, user.ID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -72,7 +76,6 @@ func login(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"message": "Login successfull", "token": token, "user": authUser})
 }
 
-// Admin's Method
 func getUsers(context *gin.Context) {
 	sort := context.Query("sort")
 	order := context.Query("order")
@@ -109,12 +112,14 @@ func getProfilePicture(context *gin.Context) {
 		return
 	}
 
+	// Check if user exist
 	user, err := models.GetUser(id)
 	if err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
 
+	// Check if user has profile picture
 	if user.ProfilePicture == nil {
 		context.Status(http.StatusNoContent)
 		return
@@ -189,4 +194,38 @@ func updateUser(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "User updated", "user": user})
+}
+
+func changeUserPassword(context *gin.Context) {
+	var userAccount models.ChangePasswordStruct
+	err := context.ShouldBindJSON(&userAccount)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if userAccount.NewPassword != userAccount.ConfirmNewPassword {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input"})
+		return
+	}
+
+	user := models.User{
+		Email:    userAccount.Email,
+		Password: userAccount.CurrentPassword,
+	}
+
+	err = user.ValidateCredentials()
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "You are not authorize to change password"})
+		return
+	}
+
+	user.Password = userAccount.NewPassword
+	err = user.ChangePassword()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "password changed", "password": user})
 }
