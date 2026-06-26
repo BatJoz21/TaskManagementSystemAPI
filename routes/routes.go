@@ -26,6 +26,7 @@ func RegisteredRoutes(server *gin.Engine) {
 	adminGroup := server.Group("/admin")
 	adminGroup.Use(middlewares.Authenticate)
 	adminGroup.Use(middlewares.AdminMiddlewares())
+	adminGroup.GET("/dashboard", getDashboardData)
 	adminGroup.GET("/users", getUsers)
 	adminGroup.GET("/users/:id", getUser)
 	adminGroup.PUT("/users/:id", updateUser)

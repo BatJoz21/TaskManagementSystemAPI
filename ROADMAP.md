@@ -21,11 +21,11 @@
 ## Phase 4 - API Improvements
 - [x] Pagination
 - [x] Search
-- [ ] Dashboard Statistics Endpoint
+- [x] Dashboard Statistics Endpoint
 
 ## Phase 5 - User Management
 - [ ] User Profile
-- [ ] Profile Image Upload
+- [x] Profile Image Upload
 - [ ] Change Password
 - [ ] Refresh JWT Token
 
