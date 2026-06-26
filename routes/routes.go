@@ -22,4 +22,11 @@ func RegisteredRoutes(server *gin.Engine) {
 	taskGroup.PUT("tasks/deleted/:id", restoreTask)
 	taskGroup.DELETE("tasks/:id", deleteTask)
 	taskGroup.DELETE("tasks/:id/attachment/delete", deleteTaskAttachment)
+
+	adminGroup := server.Group("/admin")
+	adminGroup.Use(middlewares.Authenticate)
+	adminGroup.Use(middlewares.AdminMiddlewares())
+	adminGroup.GET("/users", getUsers)
+	adminGroup.GET("/users/:id", getUser)
+	adminGroup.PUT("/users/:id", updateUser)
 }

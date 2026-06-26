@@ -20,6 +20,7 @@
 
 ## Phase 4 - API Improvements
 - [x] Pagination
+- [x] Search
 - [ ] Dashboard Statistics Endpoint
 
 ## Phase 5 - User Management

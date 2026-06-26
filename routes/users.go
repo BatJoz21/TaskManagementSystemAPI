@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"taskmanagementsystem.localhost/tmsapi/models"
@@ -49,13 +50,13 @@ func login(context *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateToken(user.Email, user.ID)
+	role, err := user.GetUserRole()
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	role, err := user.GetUserRole()
+	token, err := utils.GenerateToken(user.Email, role, user.ID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -69,4 +70,100 @@ func login(context *gin.Context) {
 		Role:      role,
 	}
 	context.JSON(http.StatusOK, gin.H{"message": "Login successfull", "token": token, "user": authUser})
+}
+
+// Admin's Method
+func getUsers(context *gin.Context) {
+	sort := context.Query("sort")
+	order := context.Query("order")
+
+	users, total, err := models.GetUsers(sort, order)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"users": users, "total": total})
+}
+
+func getUser(context *gin.Context) {
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	user, err := models.GetUser(id)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, user)
+}
+
+func updateUser(context *gin.Context) {
+	// Set up needed variable
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Get User If Exist
+	existUser, err := models.GetUser(id)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Get Data From Form
+	var updatedUser = models.UpdateUserStruct{
+		FirstName: context.PostForm("first_name"),
+		LastName:  context.PostForm("last_name"),
+		Role:      context.PostForm("role"),
+	}
+
+	// Handle upload user profile
+	var profile_picture *string
+	file, err := context.FormFile("profile_picture")
+	if file != nil {
+		profile_picture, err = utils.SaveProfilePicture(file, context)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		// Remove old profile picture
+		if existUser.ProfilePicture != nil && *existUser.ProfilePicture != "" {
+			err = utils.RemoveFileAttachment(existUser.ProfilePicture, utils.ProfilePictureDir, context.GetInt64("user_id"))
+			if err != nil {
+				context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+		}
+	} else {
+		profile_picture = existUser.ProfilePicture
+	}
+
+	user := models.User{
+		ID:             existUser.ID,
+		FirstName:      updatedUser.FirstName,
+		LastName:       updatedUser.LastName,
+		Role:           updatedUser.Role,
+		ProfilePicture: profile_picture,
+	}
+
+	err = user.Update()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	err = user.UpdateRole()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "User updated", "user": user})
 }

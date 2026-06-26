@@ -200,7 +200,7 @@ func updateTask(context *gin.Context) {
 	// Get existed task
 	taskDTO, err := models.GetTaskByID(id, context.GetInt64("user_id"))
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -224,7 +224,7 @@ func updateTask(context *gin.Context) {
 		}
 
 		if taskDTO.Attachment != nil && *taskDTO.Attachment != "" {
-			err = utils.RemoveFileAttachment(taskDTO.Attachment, context.GetInt64("user_id"))
+			err = utils.RemoveFileAttachment(taskDTO.Attachment, utils.TaskAttachmentDir, context.GetInt64("user_id"))
 			if err != nil {
 				context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 				return
@@ -357,7 +357,7 @@ func deleteTaskAttachment(context *gin.Context) {
 	}
 
 	if taskDTO.Attachment != nil && *taskDTO.Attachment != "" {
-		err = utils.RemoveFileAttachment(taskDTO.Attachment, context.GetInt64("user_id"))
+		err = utils.RemoveFileAttachment(taskDTO.Attachment, utils.TaskAttachmentDir, context.GetInt64("user_id"))
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
