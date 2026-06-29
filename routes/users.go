@@ -229,3 +229,71 @@ func changeUserPassword(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "password changed", "password": user})
 }
+
+func toggleBanUser(context *gin.Context) {
+	// Set up needed variable
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Get User If Exist
+	existUser, err := models.GetUser(id)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Set up User's new status
+	isBanned := true
+	if existUser.Status == nil || *existUser.Status == "" {
+		isBanned = false
+	}
+
+	user := models.User{
+		ID:        existUser.ID,
+		FirstName: existUser.FirstName,
+		LastName:  existUser.LastName,
+		Status:    existUser.Status,
+	}
+
+	err = user.ToggleBan(isBanned)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "User updated"})
+}
+
+func softDeleteUser(context *gin.Context) {
+	// Set up needed variable
+	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Get User If Exist
+	existUser, err := models.GetUser(id)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Soft Delete user
+	user := models.User{
+		ID:        existUser.ID,
+		FirstName: existUser.FirstName,
+		LastName:  existUser.LastName,
+	}
+
+	err = user.SoftDelete()
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "user deleted"})
+}

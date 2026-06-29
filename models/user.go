@@ -12,7 +12,7 @@ type User struct {
 	ID             int64     `json:"id"`
 	FirstName      string    `json:"first_name"`
 	LastName       string    `json:"last_name"`
-	Status         string    `json:"status"`
+	Status         *string   `json:"status"`
 	ProfilePicture *string   `json:"profile_picture"`
 	Email          string    `json:"email"`
 	Password       string    `json:"password"`
@@ -217,6 +217,40 @@ func (u *User) ChangePassword() error {
 	}
 
 	_, err = stmt.Exec(hashedPass, u.Email)
+
+	return err
+}
+
+func (u *User) ToggleBan(isBanned bool) error {
+	query := `UPDATE theusers`
+
+	if isBanned {
+		query += ` SET status = NULL WHERE id = ?`
+	} else {
+		query += ` SET status = "Banned" WHERE id = ?`
+	}
+
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.ID)
+
+	return err
+}
+
+func (u *User) SoftDelete() error {
+	query := `UPDATE theusers SET status = ?, deleted_at = ? WHERE id = ?`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	deleteTime := time.Now()
+	_, err = stmt.Exec("DELETED", deleteTime, u.ID)
 
 	return err
 }

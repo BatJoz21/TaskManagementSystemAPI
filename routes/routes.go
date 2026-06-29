@@ -34,4 +34,6 @@ func RegisteredRoutes(server *gin.Engine) {
 	adminGroup.GET("/users", getUsers)
 	adminGroup.GET("/users/:id", getUser)
 	adminGroup.PUT("/users/:id", updateUser)
+	adminGroup.PUT("/users/:id/toggle-ban", toggleBanUser)
+	adminGroup.DELETE("/users/:id", softDeleteUser)
 }

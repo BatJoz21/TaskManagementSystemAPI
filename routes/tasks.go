@@ -10,7 +10,7 @@ import (
 	"taskmanagementsystem.localhost/tmsapi/utils"
 )
 
-const limitPerPage = 2
+const limitPerPage = 4
 
 func createTask(context *gin.Context) {
 	// Create DTO for Creating Task
