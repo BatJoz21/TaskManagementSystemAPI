@@ -106,7 +106,7 @@ func logout(context *gin.Context) {
 	var request models.RefreshTokenRequest
 	err := context.ShouldBindJSON(&request)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error(), "isLoggedOut": false})
 		return
 	}
 
@@ -114,18 +114,18 @@ func logout(context *gin.Context) {
 	hashedRefreshedToken := utils.HashRefreshToken(request.RefreshToken)
 	refreshToken, err := models.GetRefreshTokenByHash(hashedRefreshedToken)
 	if err != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		context.JSON(http.StatusUnauthorized, gin.H{"message": err.Error(), "isLoggedOut": false})
 		return
 	}
 
 	// Revoke refresh token
 	err = refreshToken.RevokeRefreshToken()
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error(), "isLoggedOut": false})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "user logged out"})
+	context.JSON(http.StatusOK, gin.H{"message": "user logged out", "isLoggedOut": true})
 }
 
 func refreshToken(context *gin.Context) {
