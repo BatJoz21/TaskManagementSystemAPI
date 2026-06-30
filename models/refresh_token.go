@@ -63,3 +63,18 @@ func (r *RefreshTokenStruct) Save() error {
 
 	return nil
 }
+
+func (r *RefreshTokenStruct) RevokeRefreshToken() error {
+	query := `UPDATE refresh_tokens SET revoked_at = ? WHERE id = ?`
+	stmt, err := database.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(time.Now(), r.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
