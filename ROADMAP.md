@@ -26,7 +26,7 @@
 ## Phase 5 - User Management
 - [x] User Profile
 - [x] Profile Image Upload
-- [ ] Change Password
+- [x] Change Password
 - [ ] Refresh JWT Token
 
 ## Phase 6 - DevOps & Testing

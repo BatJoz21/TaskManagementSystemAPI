@@ -1,7 +1,13 @@
 package utils
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"crypto/sha256"
+	"encoding/hex"
 
+	"golang.org/x/crypto/bcrypt"
+)
+
+// Password
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 
@@ -12,4 +18,11 @@ func CheckPasswordHash(password, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 
 	return err == nil
+}
+
+// Refresh Token
+func HashRefreshToken(token string) string {
+	hashToken := sha256.Sum256([]byte(token))
+
+	return hex.EncodeToString(hashToken[:])
 }

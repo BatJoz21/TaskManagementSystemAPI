@@ -114,4 +114,24 @@ func createTables() {
 	if err != nil {
 		panic("Failed to create user_groups table: " + err.Error())
 	}
+
+	createRefreshTokenTable := `CREATE TABLE IF NOT EXISTS refresh_tokens (
+		id INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+		user_id INTEGER UNSIGNED NOT NULL,
+		device_name VARCHAR(100) NULL,
+		token_hash VARCHAR(225) NOT NULL,
+		expires_at DATETIME NOT NULL,
+		revoked_at DATETIME NULL,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+		CONSTRAINT token_user_id_fk
+			FOREIGN KEY(user_id)
+			REFERENCES theusers (id)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
+	)`
+	_, err = DB.Exec(createRefreshTokenTable)
+	if err != nil {
+		panic("Failed to create refresh_tokens table: " + err.Error())
+	}
 }
