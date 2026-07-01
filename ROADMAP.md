@@ -27,7 +27,7 @@
 - [x] User Profile
 - [x] Profile Image Upload
 - [x] Change Password
-- [ ] Refresh JWT Token
+- [x] Refresh JWT Token
 
 ## Phase 6 - DevOps & Testing
 - [ ] Docker
